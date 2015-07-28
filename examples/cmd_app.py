@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 # coding=utf-8
-import click
 from flask import Flask
-from flask_cmd import FlaskAPIGenerator
-from flask_cmd import FlaskAPI
+from schema_sugar.contrib import FlaskJar, FlaskSugar
 
+jar = FlaskJar(__name__, Flask(__name__))
 
-# run code and register
-app = FlaskAPI(__name__, Flask(__name__))
+cmd = jar.entry_point
 
-cmd = app.entry_point
-
-@app.register
-class ExampleGenerator(FlaskAPIGenerator):
+@jar.register
+class ExampleSugar(FlaskSugar):
     schema = {
         "help": "command to show how this api-maker works",
         "type": "object",
@@ -23,16 +19,38 @@ class ExampleGenerator(FlaskAPIGenerator):
     }
     url = "/pools"
 
-    @classmethod
-    def cli_response(cls, result):
-        print("This data is from cli: %s" % result)
+    def cli_response(self, result, **kwargs):
+        print("Api running got: %s" % result)
         return result
 
-    @classmethod
-    def process(cls, data, web_request):
-        # execute api and parse response
-        return {"data": "processed by backend!"}
+    def show(self, data, web_request, **kwargs):
+        return {
+            "pools": [
+                {'name': "pool1"}
+            ],
+        }
 
+@jar.register
+class DiskSugar(FlaskSugar):
+    schema = {
+        "help": "show disk list and create disk, etc",
+        "type": "object",
+        "properties":{
+            "pool_id": {"type": "number"},
+        }
+    }
+    url = "/disks"
+
+    def cli_response(self, result, **kwargs):
+        print("Api running got: %s" % result)
+        return result
+
+    def show(self, data, web_request, **kwargs):
+        return {
+            "disks": [
+                {'name': "disk1"}
+            ],
+        }
 
 def run_server():
     app.run(debug=True)

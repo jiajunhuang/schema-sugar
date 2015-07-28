@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='cmd_ex',
+setup(name='cmd_app',
       include_package_data=True,
       py_modules=['cmd_app'],
       entry_points={

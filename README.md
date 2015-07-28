@@ -1,4 +1,4 @@
-flask_cmd
+shcmea_sugar
 ==============
 
 # Why?
@@ -14,7 +14,7 @@ It reads schema from json-schema then generate api view(flask) and commands.
 ## Try it
 Run:
 ```bash
-git clone git@github.com:winkidney/flask_cmd.git
+git clone git@github.com:winkidney/schema-sugar.git
 
 cd flask_cmd
 sudo python setup.py develop
@@ -46,7 +46,7 @@ rest-cmd
 # show help
 rest-cmd --help
 # subcommand, this command style will be changed later 
-rest-cmd /pools 1 2
+rest-cmd pools 1 2
 ```
 
 ### Create an app

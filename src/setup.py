@@ -1,11 +1,18 @@
 import os
 from setuptools import setup, find_packages
 
-setup(name='flask_cmd',
-      packages=find_packages(".", include=['flask_cmd']),
+here = os.path.abspath(os.path.dirname(__file__))
+
+setup(name='schema-sugar',
+      packages=find_packages(here, include=['schema_sugar']),
       include_package_data=True,
       install_requires=[
           'jsonschema',
           'flask',
-      ]
+      ],
+      entry_points={
+          'console_scripts': [
+              'sugar-gen = schema_sugar:gen_code',
+          ],
+      },
       )
