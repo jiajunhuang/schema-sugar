@@ -85,11 +85,13 @@ class SchemaSugarBase(object):
     """
     _default_operation = SHOW_OP
 
-    def __init__(self, url=None, config=None):
+    def __init__(self, config=None):
         if not hasattr(self, "config") and config is not None:
             self.config = config
-        if not hasattr(self, "url") and url is not None:
-            self.url = url
+        elif hasattr(self, "config"):
+            pass
+        else:
+            raise ValueError("config can not be None, expect dict, got %s" % config)
 
     @abstractmethod
     def make_resource(self, *args, **kwargs):

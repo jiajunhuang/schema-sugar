@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
-from flask import Flask
+from flask import Flask, Blueprint
 from schema_sugar.contrib import FlaskJar, FlaskSugar
-
-jar = FlaskJar(__name__, Flask(__name__))
+flask_app = Flask(__name__)
+jar = FlaskJar(__name__, flask_app)
 
 cmd = jar.entry_point
 
@@ -33,8 +33,9 @@ class ExampleSugar(FlaskSugar):
             ],
         }
 
+bl = Blueprint("api", __name__, url_prefix="/api")
 
-@jar.register
+@jar.register(blue_print=bl)
 class DiskSugar(FlaskSugar):
     config = {
         "schema": {
@@ -60,4 +61,8 @@ class DiskSugar(FlaskSugar):
         }
 
 def run_server():
-    jar.run(debug=True, host="0.0.0.0")
+    flask_app.register_blueprint(bl)
+    flask_app.run(debug=True, host="0.0.0.0")
+
+if __name__ == "__main__":
+    run_server()

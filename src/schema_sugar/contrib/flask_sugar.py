@@ -47,7 +47,7 @@ class FlaskJar(SugarJarBase):
     def run(self, *args, **kwags):
         self.app.run(*args, **kwags)
 
-    def register(self, schema_sugar_class=None, blue_print=None, args=None, kwargs=None):
+    def register(self, schema_sugar_class=None, blue_print=None, args=(), kwargs={}):
         """
         :type schema_sugar_class: schema_sugar.contrib.flask_sugar.FlaskSugar
         """
@@ -56,13 +56,12 @@ class FlaskJar(SugarJarBase):
                 "schema_sugar_class parameter expects %s, got %s" %
                 (FlaskSugar, schema_sugar_class)
             )
-        if blue_print is not None and not issubclass(blue_print, Blueprint):
+        if blue_print is not None and not isinstance(blue_print, Blueprint):
             raise TypeError("expect %s, got %s" % (Blueprint, schema_sugar_class))
 
         if blue_print or args or kwargs:
-            @wraps
             def wrapper(schema_class):
-                self._register(schema_class(*args, **kwargs), blue_print=blue_print)
+                return self._register(schema_class(*args, **kwargs), blue_print=blue_print)
             return wrapper
         else:
             return self._register(schema_sugar_instance=schema_sugar_class())
@@ -76,16 +75,16 @@ class FlaskJar(SugarJarBase):
         schema_sugar.make_cli(self.entry_point)
 
         resource = schema_sugar.make_resource()
-        if blue_print:
+        if blue_print is not None:
             route_proxy = blue_print
         else:
             route_proxy = self.app
 
-        route_proxy.route(
-            schema_sugar.url, methods=schema_sugar.http_methods,
-            endpoint=schema_sugar.url+"-endpoint"
-        )(resource)
-        route_proxy.route(
-            schema_sugar.url + "/meta", methods=("GET", ),
-            endpoint=schema_sugar.url+"-doc"
-        )(schema_sugar.get_doc)
+        route_proxy.add_url_rule(
+            schema_sugar.url, endpoint=schema_sugar.url+"-endpoint",
+            view_func=resource, methods=schema_sugar.http_methods,
+        )
+        route_proxy.add_url_rule(
+            schema_sugar.url + "/meta", endpoint=schema_sugar.url+"-doc",
+            view_func=schema_sugar.get_doc, methods=("GET", ),
+        )
