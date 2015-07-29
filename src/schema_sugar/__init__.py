@@ -85,13 +85,11 @@ class SchemaSugarBase(object):
     """
     _default_operation = SHOW_OP
 
-    def __init__(self, url=None, schema=None, methods=tuple(CLI_MAP.keys())):
-        if not hasattr(self, "schema") and schema is not None:
-            self.schema = schema
-        if not hasattr(self, "url") and schema is not None:
+    def __init__(self, url=None, config=None):
+        if not hasattr(self, "config") and config is not None:
+            self.config = config
+        if not hasattr(self, "url") and url is not None:
             self.url = url
-        if not hasattr(self, "methods") and methods is not None:
-            self.methods = methods
 
     @abstractmethod
     def make_resource(self, *args, **kwargs):
@@ -116,7 +114,7 @@ class SchemaSugarBase(object):
         )(command_entity)
         command = click.argument(
             "operation",
-            type=click.Choice(self.methods)
+            type=click.Choice(self.cli_methods)
         )(command)
         for member in self.schema['properties'].items():
             command = ARG_CONV_MAP[member[1]["type"]](member[0])(command)
@@ -166,23 +164,37 @@ class SchemaSugarBase(object):
             raise ValueError("%s " % form.errors)
         return form.data
 
-    def get_doc(self):
+    def get_doc(self, *args, **kwargs):
         return "This is the example doc data:\n" + str(self.schema)
 
     def dumps(self):
-        return json.dumps(
-            {
-                "url": self.url,
-                "schema": self.schema,
-            }
-        )
+        return self.config
+
+    @property
+    def schema(self):
+        return self.config['schema']
+
+    @property
+    def version(self):
+        return self.config.get('version', 0)
+
+    @property
+    def cli_methods(self):
+        return self.config.get('cli_methods', CLI_MAP.keys())
+
+    @property
+    def http_methods(self):
+        return self.config.get('http_methods', HTTP_MAP.keys())
+
+    @property
+    def url(self):
+        return self.config['url']
 
     @classmethod
-    def from_string(cls, schema_string):
+    def from_string(cls, config_string):
         """
         Create a new instance from given serialized schema string.
-        :param schema_string:
-        :return:
+        :param config_string:
         """
         pass
 

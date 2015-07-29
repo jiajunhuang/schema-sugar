@@ -25,7 +25,7 @@ class FlaskSugar(SchemaSugarBase):
                 data = request.get_json(force=True)
             else:
                 data = request.args
-            return self._api_run(data, request.method, web_request=request)
+            return self._api_run(data, request.method, web_request=request, **kwargs)
 
         for decorator in decorators:
             resource = decorator(resource)
@@ -47,7 +47,7 @@ class FlaskJar(SugarJarBase):
     def run(self, *args, **kwags):
         self.app.run(*args, **kwags)
 
-    def register(self, schema_sugar_class=None, blue_print=None, methods=('GET', "POST", "PUT", "DELETE"), args=None, kwargs=None):
+    def register(self, schema_sugar_class=None, blue_print=None, args=None, kwargs=None):
         """
         :type schema_sugar_class: schema_sugar.contrib.flask_sugar.FlaskSugar
         """
@@ -62,12 +62,12 @@ class FlaskJar(SugarJarBase):
         if blue_print or args or kwargs:
             @wraps
             def wrapper(schema_class):
-                self._register(schema_class(*args, **kwargs), methods=methods, blue_print=blue_print)
+                self._register(schema_class(*args, **kwargs), blue_print=blue_print)
             return wrapper
         else:
-            return self._register(schema_sugar_class(), methods=methods)
+            return self._register(schema_sugar_instance=schema_sugar_class())
 
-    def _register(self, schema_sugar_instance, methods, blue_print=None):
+    def _register(self, schema_sugar_instance, blue_print=None):
         """
         :type schema_sugar_instance: schema_sugar.contrib.flask_sugar.FlaskSugar
         """
@@ -81,5 +81,11 @@ class FlaskJar(SugarJarBase):
         else:
             route_proxy = self.app
 
-        route_proxy.route(schema_sugar.url, methods=methods, endpoint=schema_sugar.url)(resource)
-        route_proxy.route(schema_sugar.url + "/meta", methods=("GET", ), endpoint=schema_sugar.url+"/end")(schema_sugar.get_doc)
+        route_proxy.route(
+            schema_sugar.url, methods=schema_sugar.http_methods,
+            endpoint=schema_sugar.url+"-endpoint"
+        )(resource)
+        route_proxy.route(
+            schema_sugar.url + "/meta", methods=("GET", ),
+            endpoint=schema_sugar.url+"-doc"
+        )(schema_sugar.get_doc)

@@ -9,15 +9,18 @@ cmd = jar.entry_point
 
 @jar.register
 class ExampleSugar(FlaskSugar):
-    schema = {
-        "help": "command to show how this api-maker works",
-        "type": "object",
-        "properties":{
-            "price": {"type": "number"},
-            "name": {"type": "string"}
-        }
+    config = {
+        "schema": {
+            "help": "command to show how this api-maker works",
+            "type": "object",
+            "properties":{
+                "price": {"type": "number"},
+                "name": {"type": "string"}
+            }
+        },
+        "url": "/pools",
+        "version": "1"
     }
-    url = "/pools"
 
     def cli_response(self, result, **kwargs):
         print("Api running got: %s" % result)
@@ -30,27 +33,31 @@ class ExampleSugar(FlaskSugar):
             ],
         }
 
+
 @jar.register
 class DiskSugar(FlaskSugar):
-    schema = {
-        "help": "show disk list and create disk, etc",
-        "type": "object",
-        "properties":{
-            "pool_id": {"type": "number"},
-        }
+    config = {
+        "schema": {
+            "help": "show disk list and create disk, etc",
+            "type": "object",
+            "properties":{
+                "pool_id": {"type": "number"},
+            }
+        },
+        "url": "/disks/<int:disk_id>",
+        "version": "1",
     }
-    url = "/disks"
 
     def cli_response(self, result, **kwargs):
         print("Api running got: %s" % result)
         return result
 
-    def show(self, data, web_request, **kwargs):
+    def show(self, data, web_request, disk_id):
         return {
             "disks": [
-                {'name': "disk1"}
+                {'name': "disk.%s" % disk_id}
             ],
         }
 
 def run_server():
-    app.run(debug=True)
+    jar.run(debug=True, host="0.0.0.0")
