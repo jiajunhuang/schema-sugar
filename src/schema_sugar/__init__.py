@@ -147,7 +147,7 @@ class SchemaSugarBase(object):
         return getattr(self, op2method(method))(data, web_request, **kwargs)
 
     def _api_run(self, data, method, web_request=None, **kwargs):
-        data = self._pre_processing(data, web_request, **kwargs)
+        data = self.pre_process(data, web_request, **kwargs)
 
         result = self.process(data, method, web_request, **kwargs)
         if web_request is not None:
@@ -155,7 +155,7 @@ class SchemaSugarBase(object):
         else:
             return self.cli_response(result)
 
-    def _pre_processing(self, data, web_request, **kwargs):
+    def pre_process(self, data, web_request, **kwargs):
         # validation
         class FormClass(JsonForm):
             schema = self.schema
