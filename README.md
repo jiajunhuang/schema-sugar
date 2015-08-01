@@ -31,10 +31,13 @@ rest-server
 Then open your browser with 
 ```
 # resource root
-http://locahost:5000/pools
+http://locahost:7001/api/disk/1
 
 # resource doc
-http://locahost:5000/pools/meta
+http://locahost:7001/api/disk/1/meta
+
+# site map
+http://localhost:7001/meta
 
 ```
 
@@ -45,8 +48,6 @@ http://locahost:5000/pools/meta
 rest-cmd
 # show help
 rest-cmd --help
-# subcommand, this command style will be changed later 
-rest-cmd pools 1 2
 ```
 
 ### Create an app
