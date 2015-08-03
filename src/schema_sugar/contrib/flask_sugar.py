@@ -1,40 +1,80 @@
 #!/usr/bin/env python
 # coding: utf-8
+from collections import namedtuple
 from flask import request, jsonify, Blueprint, url_for
+from werkzeug.datastructures import MultiDict
 from schema_sugar import SugarJarBase, SchemaSugarBase
+from schema_sugar.constant import RESOURCES_HTTP2OP_MAP, RESOURCE_HTTP2OP_MAP
 
 __all__ = (
     "FlaskSugar", "FlaskJar"
 )
 
+ResRule = namedtuple("UrlRule", ("url", "methods", "res_func"))
+
+
 class FlaskSugar(SchemaSugarBase):
 
-    def make_resource(self, decorators=None):
+    def make_resources(self, decorators=None):
         """
         register resource to flask, if blue_print is not None, it will be
          registered to blue_print, else the app.
-        :param app: flask app
         :param decorators: flask_decorators, pass it here
-        :param blue_print:
-        :return:
+        :rtype: list
         """
+        rules = []
 
-        def resource(*args, **kwargs):
-            if request.method in ("POST", "PUT"):
-                data = request.get_json(force=True)
-            else:
-                data = request.args
-            return self._api_run(data, request.method, web_request=request, **kwargs)
-        if decorators is not None:
-            for decorator in decorators:
-                resource = decorator(resource)
-        return resource
+        def make_resource(api_function):
+            def resource(**kwargs):
+                if request.method in ("POST", "PUT", "PATCH"):
+                    data = request.get_json(force=True)
+                else:
+                    data = request.args
+                return api_function(request.method, data, web_request=request, **kwargs)
+
+            if decorators is not None:
+                for decorator in decorators:
+                    resource = decorator(resource)
+            return resource
+
+        if self.config.is_plural:
+            rules.append(
+                ResRule(
+                    url=self.config.resource_root,
+                    methods=[x.upper() for x in RESOURCES_HTTP2OP_MAP.keys()],
+                    res_func=make_resource(self.resources_api)
+                )
+            )
+            rules.append(
+                ResRule(
+                    url=self.config.resource_root + "/<id>",
+                    methods=[x.upper() for x in RESOURCE_HTTP2OP_MAP.keys()],
+                    res_func=make_resource(self.crud_api)
+                )
+            )
+        else:
+            rules.append(
+                ResRule(
+                    url=self.config.resource_root,
+                    methods=[x.upper() for x in RESOURCE_HTTP2OP_MAP.keys()],
+                    res_func=make_resource(self.crud_api)
+                )
+            )
+
+        rules.append(
+                ResRule(
+                    url=self.config.resource_root + "/meta",
+                    methods=('GET', ), res_func=self.get_doc
+                )
+            )
+
+        return rules
 
     def web_response(self, result, http_code=200):
-        return jsonify(result), http_code
-
-
-
+        if isinstance(result, (dict, MultiDict)):
+            return jsonify(result), http_code
+        else:
+            return result, http_code
 
 class FlaskJar(SugarJarBase):
     def __init__(self, name, flask_app):
@@ -85,21 +125,17 @@ class FlaskJar(SugarJarBase):
         self.registry.add(schema_sugar)
         schema_sugar.make_cli(self.entry_point)
 
-        resource = schema_sugar.make_resource(decorators=decorators)
+        rules = schema_sugar.make_resources(decorators=decorators)
         if blue_print is not None:
             route_proxy = blue_print
         else:
             route_proxy = self.app
-
-        route_proxy.add_url_rule(
-            schema_sugar.url, endpoint=schema_sugar.url+"-endpoint",
-            view_func=resource, methods=schema_sugar.http_methods,
-        )
-        route_proxy.add_url_rule(
-            schema_sugar.url + "/meta", endpoint=schema_sugar.url+"-doc",
-            view_func=schema_sugar.get_doc, methods=("GET", ),
-        )
-        return resource
+        for rule in rules:
+            route_proxy.add_url_rule(
+                rule.url, endpoint=rule.url + "_endpoint",
+                methods=rule.methods, view_func=rule.res_func
+            )
+        return rules
 
     def has_no_empty_params(self, rule):
         defaults = rule.defaults if rule.defaults is not None else ()

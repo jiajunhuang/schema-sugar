@@ -1,13 +1,26 @@
 #!/usr/bin/env python
 # coding=utf-8
+import inspect
 import json
 import click
 import jsonschema
 from abc import abstractmethod
 from jsonschema import Draft4Validator
-from schema_sugar.constant import CLI_MAP, HTTP_MAP, SHOW_OP, OPERATIONS, CREATE_OP, UPDATE_OP
+from jsonschema.exceptions import ValidationError
+from .constant import SHOW_OP, OPERATIONS, CREATE_OP, UPDATE_OP, method2op, resources_method2op, \
+    RESOURCES_HTTP2OP_MAP, CLI2OP_MAP
+from schema_sugar.exceptions import ConfigError
 
 __version__ = "0.0.1"
+
+
+def is_abc_method(method):
+    if hasattr(
+        method, "__isabstractmethod__"
+    ) and method.__isabstractmethod__ is True:
+        return True
+    else:
+        return False
 
 
 class JsonForm(object):
@@ -75,6 +88,7 @@ ARG_CONV_MAP = {
     "default": lambda name: click.argument(name, type=click.STRING),
 }
 
+
 def cli_arg_generator(arg_type):
     """
     Return click argument generator function
@@ -84,22 +98,127 @@ def cli_arg_generator(arg_type):
     """
     return ARG_CONV_MAP.get(arg_type, ARG_CONV_MAP['default'])
 
-def op2method(method_string):
+
+class SugarConfig(object):
+    _validation_schema = {
+        "type": "object",
+        "properties": {
+            "help": {"type": "string"},
+            "schema": {
+                "type": "object",
+            },
+            "resources": {"type": "string"},
+            "resource": {"type": "string"},
+            "version": {"type": "number"},
+        },
+        "oneOf": [
+            {"required": ['resources']},
+            {"required": ['resource']},
+        ],
+        "required": ("schema",),
+        "additionalProperties": "true",
+    }
+    _form_schema = {
+        "type": "object",
+        "properties": {
+            "type": {"type": "string"},
+            "help": {"type": "string"},
+            "properties": {"type": "object"},
+            "required": {"type": 'array'},
+        },
+        "required": ("properties", ),
+    }
+
+    def __init__(self, config_dict):
+        """
+        :type config_dict: dict
+        """
+        self.config = config_dict
+        self._check_config(self.config)
+
+    @classmethod
+    def _check_config(cls, config_dict):
+        try:
+            validator = Draft4Validator(cls._validation_schema)
+            validator.validate(config_dict)
+            # check validation schema
+            form_validator = Draft4Validator(cls._form_schema)
+            for method_schema in config_dict['schema'].values():
+                form_validator.validate(method_schema)
+        except ValidationError as e:
+            msg = "Syntax Error in your config_dict:\n" + str(e)
+            raise ConfigError(msg)
+
+    @property
+    def is_plural(self):
+        if "resources" in self.config:
+            return True
+
+    def add_action(self, action_name, http_method):
+        if "extra_actions" not in self.schema:
+            self.schema['extra_actions'] = {}
+
+        self.schema['extra_actions'][action_name] = {
+            "http_method": http_method,
+        }
+
+    @property
+    def support_operations(self):
+        return self.schema.get("support_operations")
+
+    @property
+    def resource_root(self):
+        if self.config.get("resources"):
+            return "/" + self.config['resources']
+        else:
+            return "/" + self.config['resource']
+
+    @property
+    def schema(self):
+        return self.config['schema']
+
+    @property
+    def version(self):
+        return self.config.get('version', 0)
+
+    @property
+    def extra_actions(self):
+        return self.schema['extra_actions']
+
+    @property
+    def cli_methods(self):
+        return self.config.get('cli_methods', CLI2OP_MAP.keys())
+
+    @property
+    def http_methods(self):
+        return self.config.get('http_methods', RESOURCES_HTTP2OP_MAP.keys())
+
+    @classmethod
+    def from_string(cls, config_string):
+        """
+        Create a new instance from given serialized schema string.
+        :param config_string:
+        """
+        config = json.loads(config_string)
+        return cls(config)
+
+    def dumps(self):
+        return self.config
+
+
+def action(action_name, http_method):
     """
-    Convert http method name or cli operation name to curd name string.
-    :param method_string:
-    :return: converted method string in
-    :rtype basestring
+    add an extra_action to a SchemaSugarBase object
+    :param action_name:
+    :param http_method:
+    :return:
     """
-    method_string = method_string.lower()
-    if method_string in OPERATIONS:
-        return method_string
-    elif method_string in CLI_MAP:
-        return CLI_MAP[method_string]
-    elif method_string in HTTP_MAP:
-        return HTTP_MAP[method_string]
-    else:
-        raise ValueError("method `%s` not in convention map" % method_string)
+    def wrapper(func):
+        func.__is_action__ = True
+        func.__action_name__ = action_name
+        func.__http_method__ = http_method
+        return func
+    return wrapper
 
 
 class SchemaSugarBase(object):
@@ -108,17 +227,38 @@ class SchemaSugarBase(object):
     """
     _default_operation = SHOW_OP
 
-    def __init__(self, config=None):
-        if not hasattr(self, "config") and config is not None:
+    def __init__(self, config_dict=None):
+        """
+        :type config_dict: dict
+        :param config_dict: if config_dict already existed in class
+            properties, this will be ignored.
+        """
+        if not hasattr(self, "config_dict") and config_dict is not None:
             # TODO(winkidney): config validation
-            self.config = config
-        elif hasattr(self, "config"):
+            self.config_dict = config_dict
+        elif hasattr(self, "config_dict"):
             pass
         else:
-            raise ValueError("config can not be None, expect dict, got %s" % config)
+            raise ValueError("config_dict can not be None, expect dict, got %s" % config_dict)
+        self.config = SugarConfig(self.config_dict)
+        self._make_registry()
+
+    def _make_registry(self):
+        # make extra action map
+        operations = set(OPERATIONS)
+        self.config.schema['support_operations'] = []
+        for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
+            if hasattr(method, "__is_action__"):
+                self.config.add_action(
+                    method.__action_name__,
+                    method.__http_method__,
+                )
+            if not is_abc_method(method):
+                if name in operations:
+                    self.config.schema['support_operations'].append(name)
 
     @abstractmethod
-    def make_resource(self, *args, **kwargs):
+    def make_resources(self, *args, **kwargs):
         pass
 
     def make_cli(self, parent_command):
@@ -132,26 +272,36 @@ class SchemaSugarBase(object):
         # TODO(winkidney): to improve
         def make_command_entity(passed_operation):
             def command_entity(**kwargs):
-                return self._api_run(kwargs, passed_operation)
+                return self._api_run(passed_operation, kwargs)
             return command_entity
         command_list = []
-        for support_operation in self.support_operations:
+        for support_operation in self.config.support_operations:
             command = parent_command.command(
-                name=self.url.split("/")[1] + "_" + support_operation
+                name=self.config.resource_root.split("/")[1] + "_" + support_operation
             )(make_command_entity(support_operation))
-            operation = self.schema.get(support_operation, None)
+            operation = self.config.schema.get(support_operation, None)
             if operation is not None:
                 for parameter in operation['properties'].items():
                     command = cli_arg_generator(parameter[1]["type"])(parameter[0])(command)
             command_list.append(command)
         return command_list
 
+    def make_client_cli(self, parent_cmd):
+        """
+        generate rest-client cli.
+        """
+        pass
+
     def cli_response(self, result, **kwargs):
         click.echo(result)
         return result
 
     @abstractmethod
-    def web_response(self, result, **kwargs):
+    def web_response(self, result, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def index(self, data, web_request, **kwargs):
         pass
 
     @abstractmethod
@@ -170,18 +320,29 @@ class SchemaSugarBase(object):
     def delete(self, data, web_request, **kwargs):
         pass
 
-    def process(self, data, raw_method, web_request, **kwargs):
-        method = op2method(raw_method)
-        validate_schema = self.schema.get(method, {"type": "object", "properties": {}})
+    def process(self, operation, data, web_request, **kwargs):
+        validate_schema = self.config.schema.get(operation, {"type": "object", "properties": {}})
         processed_data = self.validate(validate_schema, data)
-        return getattr(self, method)(processed_data, web_request, **kwargs)
+        return getattr(self, operation)(processed_data, web_request, **kwargs)
 
-    def _api_run(self, data, method, web_request=None, **kwargs):
+    def crud_api(self, raw_method_name, data, web_request=None, **kwargs):
+        operation = method2op(raw_method_name)
+        return self._api_run(operation, data, web_request, **kwargs)
+
+    def resources_api(self, raw_method_name, data, web_request=None, **kwargs):
+        operation = resources_method2op(raw_method_name)
+        return self._api_run(operation, data, web_request, **kwargs)
+
+    def _api_run(self, operation, data, web_request=None, **kwargs):
+        """
+        :param operation: in self.config.schema.keys()
+           (index, create, show, delete, update, etc)
+        """
         data = self.pre_process(data, web_request, **kwargs)
-        result = self.process(data, method, web_request, **kwargs)
+        result = self.process(operation, data, web_request, **kwargs)
         if web_request is not None:
             if isinstance(result, (tuple, list)):
-                return self.web_response(result[0], result[1])
+                return self.web_response(*result)
             else:
                 return self.web_response(result)
         else:
@@ -199,42 +360,8 @@ class SchemaSugarBase(object):
         return data
 
     def get_doc(self, *args, **kwargs):
-        return "This is the example doc data:\n" + str(self.schema)
-
-    def dumps(self):
-        return self.config
-
-    @property
-    def schema(self):
-        return self.config['schema']
-
-    @property
-    def version(self):
-        return self.config.get('version', 0)
-
-    @property
-    def support_operations(self):
-        return self.schema['support_operations']
-
-    @property
-    def cli_methods(self):
-        return self.config.get('cli_methods', CLI_MAP.keys())
-
-    @property
-    def http_methods(self):
-        return self.config.get('http_methods', HTTP_MAP.keys())
-
-    @property
-    def url(self):
-        return self.config['url']
-
-    @classmethod
-    def from_string(cls, config_string):
-        """
-        Create a new instance from given serialized schema string.
-        :param config_string:
-        """
-        pass
+        return "This is the example doc data:\n" \
+               + str(self.config.schema)
 
 
 class SugarJarBase(object):
