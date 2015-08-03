@@ -52,6 +52,14 @@ class FlaskSugar(SchemaSugarBase):
                     res_func=make_resource(self.crud_api)
                 )
             )
+            for name, action in self.config.extra_actions:
+                rules.append(
+                    ResRule(
+                        url=self.config.resource_root + "/<id>/" + name,
+                        methods=(action['http_method'], ),
+                        res_func=make_resource(self.action_api(name)),
+                    )
+                )
         else:
             rules.append(
                 ResRule(
@@ -60,6 +68,14 @@ class FlaskSugar(SchemaSugarBase):
                     res_func=make_resource(self.crud_api)
                 )
             )
+            for name, action in self.config.extra_actions.items():
+                rules.append(
+                    ResRule(
+                        url=self.config.resource_root + "/" + name,
+                        methods=(action['http_method'], ),
+                        res_func=make_resource(self.action_api(name)),
+                    )
+                )
 
         rules.append(
                 ResRule(

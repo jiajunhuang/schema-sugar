@@ -110,6 +110,7 @@ class SugarConfig(object):
             "resources": {"type": "string"},
             "resource": {"type": "string"},
             "version": {"type": "number"},
+            "extra_actions": {"type": "object"},
         },
         "oneOf": [
             {"required": ['resources']},
@@ -134,6 +135,8 @@ class SugarConfig(object):
         :type config_dict: dict
         """
         self.config = config_dict
+        if not self.schema.get("extra_actions", None):
+            self.config['extra_actions'] = {}
         self._check_config(self.config)
 
     @classmethod
@@ -147,7 +150,7 @@ class SugarConfig(object):
                 form_validator.validate(method_schema)
         except ValidationError as e:
             msg = "Syntax Error in your config_dict:\n" + str(e)
-            raise ConfigError(msg)
+            raise ConfigError("%s\n Your config is: %s" % (msg, config_dict))
 
     @property
     def is_plural(self):
@@ -155,10 +158,7 @@ class SugarConfig(object):
             return True
 
     def add_action(self, action_name, http_method):
-        if "extra_actions" not in self.schema:
-            self.schema['extra_actions'] = {}
-
-        self.schema['extra_actions'][action_name] = {
+        self.extra_actions[action_name] = {
             "http_method": http_method,
         }
 
@@ -183,7 +183,7 @@ class SugarConfig(object):
 
     @property
     def extra_actions(self):
-        return self.schema['extra_actions']
+        return self.config['extra_actions']
 
     @property
     def cli_methods(self):
@@ -332,6 +332,11 @@ class SchemaSugarBase(object):
     def resources_api(self, raw_method_name, data, web_request=None, **kwargs):
         operation = resources_method2op(raw_method_name)
         return self._api_run(operation, data, web_request, **kwargs)
+
+    def action_api(self, raw_method_name):
+        operation = raw_method_name
+        return lambda passed_operation, data, web_request, **kwargs: \
+            self._api_run(operation, data, web_request, **kwargs)
 
     def _api_run(self, operation, data, web_request=None, **kwargs):
         """

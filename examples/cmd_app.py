@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 from flask import Flask, Blueprint, jsonify
+from schema_sugar import action
 from schema_sugar.contrib import FlaskJar, FlaskSugar
 flask_app = Flask(__name__)
 jar = FlaskJar(__name__, flask_app)
@@ -82,14 +83,18 @@ class EarthSugar(FlaskSugar):
         print("Api running got: %s" % result)
         return result
 
-    def index(self, data, web_request, **kwargs):
-        # return {"index": "example"}
-        return {"hello": "this is the earth"}
-
     def show(self, data, web_request, **kwargs):
         return {
-            "disks": [
+            "pools": [
                 {'name': "earth.%s" % data}
+            ],
+        }
+
+    @action("edit", http_method="GET")
+    def edit(self, data, web_request, **kwargs):
+        return {
+            "pools": [
+                {'name': "pool edit view"}
             ],
         }
 
