@@ -96,6 +96,8 @@ def cli_arg_generator(arg_type):
     :type arg_type: basestring
     :rtype callable
     """
+    if not isinstance(arg_type, (str, unicode)):
+        raise ValueError("arg_type shoud be a string, got %s" % type(arg_type))
     return ARG_CONV_MAP.get(arg_type, ARG_CONV_MAP['default'])
 
 
