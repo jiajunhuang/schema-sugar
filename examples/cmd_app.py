@@ -90,7 +90,7 @@ class EarthSugar(FlaskSugar):
             ],
         }
 
-    @action("edit", http_method="GET")
+    @action("edit")
     def edit(self, data, web_request, **kwargs):
         return {
             "pools": [

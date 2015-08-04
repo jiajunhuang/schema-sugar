@@ -8,7 +8,7 @@ from abc import abstractmethod
 from jsonschema import Draft4Validator
 from jsonschema.exceptions import ValidationError
 from .constant import SHOW_OP, OPERATIONS, CREATE_OP, UPDATE_OP, method2op, resources_method2op, \
-    RESOURCES_HTTP2OP_MAP, CLI2OP_MAP
+    RESOURCES_HTTP2OP_MAP, CLI2OP_MAP, HTTP_GET
 from schema_sugar.exceptions import ConfigError
 
 __version__ = "0.0.1"
@@ -206,12 +206,11 @@ class SugarConfig(object):
         return self.config
 
 
-def action(action_name, http_method):
+def action(action_name, http_method=HTTP_GET):
     """
     add an extra_action to a SchemaSugarBase object
-    :param action_name:
-    :param http_method:
-    :return:
+    :param action_name: the action name in url(as postfix)
+    :param http_method: how does this action been visited
     """
     def wrapper(func):
         func.__is_action__ = True
