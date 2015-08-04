@@ -113,7 +113,7 @@ class FlaskJar(SugarJarBase):
 
     def register(
             self, schema_sugar_class=None, blue_print=None,
-            decorators=None, args=(), kwargs=None):
+            decorators=None, args=None, kwargs=None):
         """
         :param args: args passed to schema_sugar_class
         :param kwargs: kwargs passed to schema_sugar_class
@@ -134,6 +134,9 @@ class FlaskJar(SugarJarBase):
                             (Blueprint, schema_sugar_class))
 
         if blue_print or args or kwargs:
+            args = args or []
+            kwargs = kwargs or {}
+
             def wrapper(schema_class):
                 return self._register(
                     schema_class(*args, **kwargs),
