@@ -14,7 +14,7 @@ from schema_sugar.exceptions import ConfigError
 __version__ = "0.0.1"
 
 
-def is_abc_method(method):
+def is_abs_method(method):
     if hasattr(
         method, "__isabstractmethod__"
     ) and method.__isabstractmethod__ is True:
@@ -252,7 +252,7 @@ class SchemaSugarBase(object):
                     method.__action_name__,
                     method.__http_method__,
                 )
-            if not is_abc_method(method):
+            if not is_abs_method(method):
                 if name in operations:
                     self.config.schema['support_operations'].append(name)
 
