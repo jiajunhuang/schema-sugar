@@ -3,7 +3,7 @@
 from collections import namedtuple
 from flask import request, jsonify, Blueprint, url_for
 from werkzeug.datastructures import MultiDict
-from schema_sugar import SugarJarBase, SchemaSugarBase
+from schema_sugar import SugarJarBase, SchemaSugarBase, MethodNotImplement
 from schema_sugar.constant import RESOURCES_HTTP2OP_MAP, RESOURCE_HTTP2OP_MAP
 
 __all__ = (
@@ -107,6 +107,14 @@ class FlaskJar(SugarJarBase):
         self.app = flask_app
         self.app.add_url_rule("/meta", endpoint="site_map",
                               view_func=self.site_map)
+
+        self.app.register_error_handler(
+            MethodNotImplement, self.not_support_view
+        )
+
+    @staticmethod
+    def not_support_view(exception):
+        return str(exception), 501
 
     def run(self, *args, **kwags):
         self.app.run(*args, **kwags)

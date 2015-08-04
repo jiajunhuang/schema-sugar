@@ -14,12 +14,17 @@ from .constant import (
     HTTP_GET
 )
 
-from .exceptions import ConfigError
+from .exceptions import ConfigError, MethodNotImplement
 
 __version__ = "0.0.1"
 
 
 def is_abs_method(method):
+    if not callable(method):
+        raise ValueError(
+            "You passed a non-callable method, "
+            "expect func, got %s" % type(method)
+        )
     if hasattr(method, "__isabstractmethod__") \
             and method.__isabstractmethod__ is True:
         return True
@@ -364,6 +369,10 @@ class SchemaSugarBase(object):
            (index, create, show, delete, update, etc)
         """
         data = self.pre_process(data, web_request, **kwargs)
+        if is_abs_method(getattr(self, operation)):
+            raise MethodNotImplement(
+                "Operation `%s` not supported" % operation
+            )
         result = self.process(operation, data, web_request, **kwargs)
         if web_request is not None:
             if isinstance(result, (tuple, list)):

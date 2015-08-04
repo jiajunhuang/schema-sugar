@@ -107,7 +107,7 @@ class SingleSugar(FlaskSugar):
         "resource": "cluster",
     }
 
-    def show(self, data, web_request, **kwargs):
+    def create(self, data, web_request, **kwargs):
         return {"hello": "this a standalone cluster"}
 
 def run_server():
