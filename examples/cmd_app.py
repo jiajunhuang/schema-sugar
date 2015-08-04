@@ -9,6 +9,7 @@ jar = FlaskJar(__name__, flask_app)
 cmd = jar.entry_point
 
 bl = Blueprint("api", __name__, url_prefix="/api")
+bl2 = Blueprint("bl2", "bl2", url_prefix="/api")
 
 @jar.register(blue_print=bl)
 class DiskSugar(FlaskSugar):
@@ -99,8 +100,19 @@ class EarthSugar(FlaskSugar):
         }
 
 
+@jar.register(blue_print=bl)
+class SingleSugar(FlaskSugar):
+    config_dict = {
+        "schema": {},
+        "resource": "cluster",
+    }
+
+    def show(self, data, web_request, **kwargs):
+        return {"hello": "this a standalone cluster"}
+
 def run_server():
     flask_app.register_blueprint(bl)
+    flask_app.register_blueprint(bl2)
     flask_app.run(debug=True, host="0.0.0.0", port=7001)
 
 

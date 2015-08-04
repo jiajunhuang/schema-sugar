@@ -121,8 +121,8 @@ class SugarConfig(object):
             "schema": {
                 "type": "object",
             },
-            "resources": {"type": "string"},
-            "resource": {"type": "string"},
+            "resources": {"type": "string", "minLength": 1},
+            "resource": {"type": "string", "minLength": 1},
             "version": {"type": "number"},
             "extra_actions": {"type": "object"},
         },
