@@ -28,6 +28,7 @@ class JsonForm(object):
     schema = {}
 
     def __init__(self, json_data, strict=False, live_schema=None):
+        self.live_schema = live_schema
         if not hasattr(json_data, '__getitem__'):
             raise TypeError('json_data must be a dict.')
         if (not self.schema) and (live_schema is None):
@@ -36,7 +37,6 @@ class JsonForm(object):
             if not self.schema:
                 self.schema = live_schema
             else:
-                self.live_schema = live_schema
                 self.schema['properties'].update(live_schema['properties'])
                 if "required" in self.schema and "required" in live_schema:
                     self.schema['required'] = list(set(self.schema['required']) | set(live_schema["required"]))
