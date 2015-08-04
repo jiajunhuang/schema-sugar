@@ -7,9 +7,14 @@ import jsonschema
 from abc import abstractmethod
 from jsonschema import Draft4Validator
 from jsonschema.exceptions import ValidationError
-from .constant import SHOW_OP, OPERATIONS, CREATE_OP, UPDATE_OP, method2op, resources_method2op, \
-    RESOURCES_HTTP2OP_MAP, CLI2OP_MAP, HTTP_GET
-from schema_sugar.exceptions import ConfigError
+
+from .constant import (
+    SHOW_OP, OPERATIONS, CREATE_OP, UPDATE_OP, method2op,
+    resources_method2op, RESOURCES_HTTP2OP_MAP, CLI2OP_MAP,
+    HTTP_GET
+)
+
+from .exceptions import ConfigError
 
 __version__ = "0.0.1"
 
@@ -39,7 +44,9 @@ class JsonForm(object):
                 self.schema['properties'].update(live_schema['properties'])
                 if "required" in self.schema and "required" in live_schema:
                     self.schema['required'] = list(
-                        set(self.schema['required']) | set(live_schema["required"]))
+                        set(self.schema['required']) |
+                        set(live_schema["required"])
+                    )
 
         Draft4Validator.check_schema(self.schema)
 
@@ -64,8 +71,10 @@ class JsonForm(object):
             if key in properties:
                 if properties[key]['type'].lower() == 'object':
                     output[key] = {}
-                    self._filter_data(data[key], properties[key][
-                                      'properties'], output[key])
+                    self._filter_data(
+                        data[key], properties[key]['properties'],
+                        output[key]
+                    )
                 elif properties[key]['type'].lower() == 'number':
                     try:
                         output[key] = int(data[key])
@@ -85,7 +94,9 @@ class JsonForm(object):
 ARG_CONV_MAP = {
     "number": lambda name: click.argument(name, type=click.INT),
     "string": lambda name: click.argument(name, type=click.STRING),
-    "boolean": lambda name: click.option("--" + name, is_flag=True, default=True),
+    "boolean": lambda name: click.option(
+        "--" + name, is_flag=True, default=True
+    ),
     "default": lambda name: click.argument(name, type=click.STRING),
 }
 
@@ -242,7 +253,9 @@ class SchemaSugarBase(object):
             pass
         else:
             raise ValueError(
-                "config_dict can not be None, expect dict, got %s" % config_dict)
+                "config_dict can not be None,"
+                " expect dict, got %s" % config_dict
+            )
         self.config = SugarConfig(self.config_dict)
         self._make_registry()
 
@@ -250,7 +263,8 @@ class SchemaSugarBase(object):
         # make extra action map
         operations = set(OPERATIONS)
         self.config.schema['support_operations'] = []
-        for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
+        for name, method in \
+                inspect.getmembers(self, predicate=inspect.ismethod):
             if hasattr(method, "__is_action__"):
                 self.config.add_action(
                     method.__action_name__,

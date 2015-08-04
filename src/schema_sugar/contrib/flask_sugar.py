@@ -30,7 +30,10 @@ class FlaskSugar(SchemaSugarBase):
                     data = request.get_json(force=True)
                 else:
                     data = request.args
-                return api_function(request.method, data, web_request=request, **kwargs)
+                return api_function(
+                    request.method, data,
+                    web_request=request, **kwargs
+                )
 
             if decorators is not None:
                 for decorator in decorators:
@@ -108,7 +111,9 @@ class FlaskJar(SugarJarBase):
     def run(self, *args, **kwags):
         self.app.run(*args, **kwags)
 
-    def register(self, schema_sugar_class=None, blue_print=None, decorators=None, args=(), kwargs={}):
+    def register(
+            self, schema_sugar_class=None, blue_print=None,
+            decorators=None, args=(), kwargs=None):
         """
         :param args: args passed to schema_sugar_class
         :param kwargs: kwargs passed to schema_sugar_class
@@ -117,12 +122,14 @@ class FlaskJar(SugarJarBase):
         :type schema_sugar_class: schema_sugar.contrib.flask_sugar.FlaskSugar
         :type decorators: a list of flask view decorator
         """
-        if schema_sugar_class is not None and not issubclass(schema_sugar_class, FlaskSugar):
+        if schema_sugar_class is not None \
+                and not issubclass(schema_sugar_class, FlaskSugar):
             raise TypeError(
                 "schema_sugar_class parameter expects %s, got %s" %
                 (FlaskSugar, schema_sugar_class)
             )
-        if blue_print is not None and not isinstance(blue_print, Blueprint):
+        if blue_print is not None \
+                and not isinstance(blue_print, Blueprint):
             raise TypeError("expect %s, got %s" %
                             (Blueprint, schema_sugar_class))
 
