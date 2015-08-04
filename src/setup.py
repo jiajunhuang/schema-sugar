@@ -9,6 +9,7 @@ setup(name='schema-sugar',
       install_requires=[
           'jsonschema',
           'flask',
+          'click',
       ],
       entry_points={
           'console_scripts': [
