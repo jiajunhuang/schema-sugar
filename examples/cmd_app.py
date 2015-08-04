@@ -105,10 +105,19 @@ class SingleSugar(FlaskSugar):
     config_dict = {
         "schema": {},
         "resource": "cluster",
+        "out_fields": {
+            "show": ["field1"],
+        }
     }
 
     def create(self, data, web_request, **kwargs):
         return {"hello": "this a standalone cluster"}
+
+    def show(self, data, web_request, **kwargs):
+        return {
+            "field1": "hello",
+            "field2": "field2, will not be displayed",
+        }
 
 def run_server():
     flask_app.register_blueprint(bl)

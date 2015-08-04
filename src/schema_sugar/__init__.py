@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
+from collections import OrderedDict
 import inspect
 import json
 import click
@@ -130,6 +131,7 @@ class SugarConfig(object):
             "resource": {"type": "string", "minLength": 1},
             "version": {"type": "number"},
             "extra_actions": {"type": "object"},
+            "out_fields": {"type": "object"},
         },
         "oneOf": [
             {"required": ['resources']},
@@ -148,14 +150,20 @@ class SugarConfig(object):
         },
         "required": ("properties", ),
     }
+    _out_fields_schema = {
+        "type": "array",
+        "items": {"type": "string"},
+    }
 
     def __init__(self, config_dict):
         """
         :type config_dict: dict
         """
         self.config = config_dict
-        if not self.schema.get("extra_actions", None):
+        if self.schema.get("extra_actions", None) is None:
             self.config['extra_actions'] = {}
+        if self.config.get("out_fields", None) is None:
+            self.config['out_fields'] = {}
         self._check_config(self.config)
 
     @classmethod
@@ -163,10 +171,16 @@ class SugarConfig(object):
         try:
             validator = Draft4Validator(cls._validation_schema)
             validator.validate(config_dict)
+
             # check validation schema
             form_validator = Draft4Validator(cls._form_schema)
             for method_schema in config_dict['schema'].values():
                 form_validator.validate(method_schema)
+
+            out_fields_validator = Draft4Validator(cls._out_fields_schema)
+            for out_fields_obj in config_dict['out_fields'].values():
+                out_fields_validator.validate(out_fields_obj)
+
         except ValidationError as e:
             msg = "Syntax Error in your config_dict:\n" + str(e)
             raise ConfigError("%s\n Your config is: %s" % (msg, config_dict))
@@ -180,6 +194,12 @@ class SugarConfig(object):
         self.extra_actions[action_name] = {
             "http_method": http_method,
         }
+
+    def get_out_fields(self, operation_name):
+        """
+        :rtype : list or None
+        """
+        return self.config['out_fields'].get(operation_name, None)
 
     @property
     def support_operations(self):
@@ -374,6 +394,8 @@ class SchemaSugarBase(object):
                 "Operation `%s` not supported" % operation
             )
         result = self.process(operation, data, web_request, **kwargs)
+        if isinstance(result, (dict, OrderedDict)):
+            result = self.out_filter(result, operation)
         if web_request is not None:
             if isinstance(result, (tuple, list)):
                 return self.web_response(*result)
@@ -381,6 +403,19 @@ class SchemaSugarBase(object):
                 return self.web_response(result)
         else:
             return self.cli_response(result)
+
+    def out_filter(self, result, operation):
+        """
+        :type result:
+        :type operation:
+        :return:
+        """
+        out_dict = {}
+        out_fields = set(self.config.get_out_fields(operation))
+        for key, value in result.items():
+            if key in out_fields:
+                out_dict[key] = value
+        return out_dict
 
     @staticmethod
     def validate(validate_schema, data):
