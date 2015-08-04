@@ -36,6 +36,7 @@ RESOURCES_HTTP2OP_MAP = {
     HTTP_GET: INDEX_OP,
 }
 
+
 def method2op(method_string, extra_methods=None):
     """
     Convert http method name or cli operation name to curd name string.
@@ -53,6 +54,7 @@ def method2op(method_string, extra_methods=None):
     else:
         raise ValueError("method `%s` not in convention map" % method_string)
 
+
 def resources_method2op(method_string):
     """
     Convert http method to operation for a `resources`.
@@ -64,4 +66,3 @@ def resources_method2op(method_string):
         return RESOURCES_HTTP2OP_MAP[method_string]
     else:
         return method_string
-

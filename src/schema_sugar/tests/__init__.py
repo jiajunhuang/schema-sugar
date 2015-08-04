@@ -37,6 +37,7 @@ class TestMethod2OPCONV(unittest.TestCase):
 
         self.assertIsNotNone(e)
 
+
 class TestResourcesMethod2OPCONV(unittest.TestCase):
 
     def test_resources_method2op(self):
@@ -114,7 +115,8 @@ class TestJsonForm(unittest.TestCase):
         self.assertEqual(self.base_schema, form.schema)
 
     def test_live_schema(self):
-        form = self.JsonForm(self.base_valid_data, live_schema=self.base_schema)
+        form = self.JsonForm(self.base_valid_data,
+                             live_schema=self.base_schema)
 
         self.assertEqual(form.schema, self.base_schema)
 

@@ -78,11 +78,11 @@ class FlaskSugar(SchemaSugarBase):
                 )
 
         rules.append(
-                ResRule(
-                    url=self.config.resource_root + "/meta",
-                    methods=('GET', ), res_func=self.get_doc
-                )
+            ResRule(
+                url=self.config.resource_root + "/meta",
+                methods=('GET', ), res_func=self.get_doc
             )
+        )
 
         return rules
 
@@ -92,7 +92,9 @@ class FlaskSugar(SchemaSugarBase):
         else:
             return result, http_code
 
+
 class FlaskJar(SugarJarBase):
+
     def __init__(self, name, flask_app):
         """
         :type flask_app: flask.Flask
@@ -100,7 +102,8 @@ class FlaskJar(SugarJarBase):
         super(FlaskJar, self).__init__(name)
         self.registry = set()
         self.app = flask_app
-        self.app.add_url_rule("/meta", endpoint="site_map", view_func=self.site_map)
+        self.app.add_url_rule("/meta", endpoint="site_map",
+                              view_func=self.site_map)
 
     def run(self, *args, **kwags):
         self.app.run(*args, **kwags)
@@ -120,7 +123,8 @@ class FlaskJar(SugarJarBase):
                 (FlaskSugar, schema_sugar_class)
             )
         if blue_print is not None and not isinstance(blue_print, Blueprint):
-            raise TypeError("expect %s, got %s" % (Blueprint, schema_sugar_class))
+            raise TypeError("expect %s, got %s" %
+                            (Blueprint, schema_sugar_class))
 
         if blue_print or args or kwargs:
             def wrapper(schema_class):

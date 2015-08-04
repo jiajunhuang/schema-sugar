@@ -15,9 +15,8 @@ __version__ = "0.0.1"
 
 
 def is_abs_method(method):
-    if hasattr(
-        method, "__isabstractmethod__"
-    ) and method.__isabstractmethod__ is True:
+    if hasattr(method, "__isabstractmethod__") \
+            and method.__isabstractmethod__ is True:
         return True
     else:
         return False
@@ -39,7 +38,8 @@ class JsonForm(object):
             else:
                 self.schema['properties'].update(live_schema['properties'])
                 if "required" in self.schema and "required" in live_schema:
-                    self.schema['required'] = list(set(self.schema['required']) | set(live_schema["required"]))
+                    self.schema['required'] = list(
+                        set(self.schema['required']) | set(live_schema["required"]))
 
         Draft4Validator.check_schema(self.schema)
 
@@ -64,7 +64,8 @@ class JsonForm(object):
             if key in properties:
                 if properties[key]['type'].lower() == 'object':
                     output[key] = {}
-                    self._filter_data(data[key], properties[key]['properties'], output[key])
+                    self._filter_data(data[key], properties[key][
+                                      'properties'], output[key])
                 elif properties[key]['type'].lower() == 'number':
                     try:
                         output[key] = int(data[key])
@@ -240,7 +241,8 @@ class SchemaSugarBase(object):
         elif hasattr(self, "config_dict"):
             pass
         else:
-            raise ValueError("config_dict can not be None, expect dict, got %s" % config_dict)
+            raise ValueError(
+                "config_dict can not be None, expect dict, got %s" % config_dict)
         self.config = SugarConfig(self.config_dict)
         self._make_registry()
 
@@ -278,12 +280,14 @@ class SchemaSugarBase(object):
         command_list = []
         for support_operation in self.config.support_operations:
             command = parent_command.command(
-                name=self.config.resource_root.split("/")[1] + "_" + support_operation
+                name=self.config.resource_root.split(
+                    "/")[1] + "_" + support_operation
             )(make_command_entity(support_operation))
             operation = self.config.schema.get(support_operation, None)
             if operation is not None:
                 for parameter in operation['properties'].items():
-                    command = cli_arg_generator(parameter[1]["type"])(parameter[0])(command)
+                    command = cli_arg_generator(
+                        parameter[1]["type"])(parameter[0])(command)
             command_list.append(command)
         return command_list
 
@@ -322,7 +326,8 @@ class SchemaSugarBase(object):
         pass
 
     def process(self, operation, data, web_request, **kwargs):
-        validate_schema = self.config.schema.get(operation, {"type": "object", "properties": {}})
+        validate_schema = self.config.schema.get(
+            operation, {"type": "object", "properties": {}})
         processed_data = self.validate(validate_schema, data)
         return getattr(self, operation)(processed_data, web_request, **kwargs)
 
