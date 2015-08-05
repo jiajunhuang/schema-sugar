@@ -1,5 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
+# -*- coding: utf-8 -*-
+# Copyright (c) 2013-2015, SMARTX
+# All rights reserved.
+
 from collections import namedtuple
 from flask import request, jsonify, Blueprint, url_for
 from werkzeug.datastructures import MultiDict

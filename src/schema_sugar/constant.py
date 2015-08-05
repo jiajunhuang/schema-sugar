@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
+# -*- coding: utf-8 -*-
+# Copyright (c) 2013-2015, SMARTX
+# All rights reserved.
 
 SHOW_OP = "show"
 UPDATE_OP = "update"

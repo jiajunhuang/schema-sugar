@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2013-2015, SMARTX
+# All rights reserved.
+
 import os
 from setuptools import setup, find_packages
 
