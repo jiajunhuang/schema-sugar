@@ -13,6 +13,7 @@ cmd = jar.entry_point
 bl = Blueprint("api", __name__, url_prefix="/api")
 bl2 = Blueprint("bl2", "bl2", url_prefix="/api")
 
+# registered with blue print
 @jar.register(blue_print=bl)
 class DiskSugar(FlaskSugar):
     config_dict = {
@@ -20,12 +21,17 @@ class DiskSugar(FlaskSugar):
             "create": {
                 "help": "command to show how this api-maker works",
                 "type": "object",
-                "properties":{
+                "properties": {
                     "name": {"type": "string"},
                     "size": {"type": "string"},
                 },
+                # required field for "create" operation
                 "required": ["name", "size"]
             },
+            # params requires for index operation
+            # because "index" maps to http "GET",
+            # the params check will run on url-params
+            # not the json-request-body
             "index": {
                 "type": "object",
                 "properties": {
@@ -33,12 +39,17 @@ class DiskSugar(FlaskSugar):
                 },
             },
         },
+        # singular resource and resources will be generated automatically
+        # for a "resources", "index", "create" maps to "GET /disks" and
+        # "POST /disks", "show", "delete", "update" maps to
+        # "GET /disks/<id>", "DELETE /disks/<id>", "PUT /disks/<id>"
         "resources": "disks",
-        # single resource and resources will be generated automatically
+
         "version": 1,
     }
 
     def cli_response(self, result, **kwargs):
+        # define response to cli
         print("Api running got: %s" % result)
         return result
 
@@ -93,8 +104,11 @@ class EarthSugar(FlaskSugar):
             ],
         }
 
-    @action("edit")
-    def edit(self, data, web_request, **kwargs):
+    # action support for a single resource
+    # will be registered to "/disks/<id>/edit"
+    # for "resources", it will be "/earth/edit"
+    @action("edit", http_method="GET")
+    def edit(self, data, web_request, id, **kwargs):
         return {
             "pools": [
                 {'name': "pool edit view"}
@@ -103,7 +117,7 @@ class EarthSugar(FlaskSugar):
 
 
 @jar.register(blue_print=bl)
-class SingleSugar(FlaskSugar):
+class SingularSugar(FlaskSugar):
     config_dict = {
         "schema": {},
         "resource": "cluster",
@@ -115,6 +129,9 @@ class SingleSugar(FlaskSugar):
     def create(self, data, web_request, **kwargs):
         return {"hello": "this a standalone cluster"}
 
+    # out_put filter works, the field2 will not be displayed
+    # out_fields only works for a dict, other response type
+    # will be returned as it was.
     def show(self, data, web_request, **kwargs):
         return {
             "field1": "hello",
