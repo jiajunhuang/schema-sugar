@@ -1,4 +1,4 @@
-shcmea_sugar
+schema sugar
 ==============
 
 # Why?
