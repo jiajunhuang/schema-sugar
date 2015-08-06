@@ -15,6 +15,10 @@ setup(name='schema-sugar',
           'flask',
           'click',
       ],
+      test_requires=[
+        "nose",
+        "coverage",
+      ],
       entry_points={
           'console_scripts': [
               'sugar-gen = schema_sugar:gen_code',
