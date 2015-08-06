@@ -119,7 +119,12 @@ class EarthSugar(FlaskSugar):
 @jar.register(blue_print=bl)
 class SingularSugar(FlaskSugar):
     config_dict = {
-        "schema": {},
+        "schema": {
+            "delete": {
+                "type": "object",
+                "help": "this is the help"
+            }
+        },
         "resource": "cluster",
         "out_fields": {
             "show": ["field1"],
@@ -137,6 +142,9 @@ class SingularSugar(FlaskSugar):
             "field1": "hello",
             "field2": "field2, will not be displayed",
         }
+
+    def delete(self, data, web_request, **kwargs):
+        pass
 
 def run_server():
     flask_app.register_blueprint(bl)

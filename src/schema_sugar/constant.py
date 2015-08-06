@@ -17,7 +17,7 @@ CLI2OP_MAP = {
     "show": SHOW_OP,
     "update": UPDATE_OP,
     "delete": DELETE_OP,
-    "index": DELETE_OP,
+    "index": INDEX_OP,
 }
 
 HTTP_GET = 'get'
@@ -38,9 +38,9 @@ RESOURCES_HTTP2OP_MAP = {
 }
 
 
-def method2op(method_string, extra_methods=None):
+def method2op(method_string):
     """
-    Convert http method name or cli operation name to curd name string.
+    Convert http method name or cli operation name to crud name string.
     :param method_string:
     :return: converted method string in
     :rtype : basestring

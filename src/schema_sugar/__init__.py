@@ -59,6 +59,7 @@ class JsonForm(object):
         Draft4Validator.check_schema(self.schema)
 
         self.data = {}
+        self.data = {}
         if not strict:
             self._filter_data(json_data, self.schema['properties'], self.data)
         else:
@@ -150,7 +151,7 @@ class SugarConfig(object):
             "properties": {"type": "object"},
             "required": {"type": 'array'},
         },
-        "required": ("properties", ),
+        "required": ("type", )
     }
     _out_fields_schema = {
         "type": "array",
@@ -166,6 +167,10 @@ class SugarConfig(object):
             self.config['extra_actions'] = {}
         if self.config.get("out_fields", None) is None:
             self.config['out_fields'] = {}
+        for operation_name in self.schema:
+            if "properties" not in self.schema[operation_name]:
+                self.schema[operation_name]['properties'] = {}
+
         self._check_config(self.config)
 
     @classmethod
@@ -217,6 +222,21 @@ class SugarConfig(object):
     @property
     def schema(self):
         return self.config['schema']
+
+    def get_validation_schema(self, operation):
+        """
+        Get given operation's validation schema.
+        If schema not implemented, return default value.
+        :type operation: str or unicode
+        :rtype :dict
+        """
+        return self.schema.get(
+            operation,
+            {
+                "type": "object",
+                "properties": {},
+            }
+        )
 
     @property
     def version(self):
@@ -367,8 +387,8 @@ class SchemaSugarBase(object):
         pass
 
     def process(self, operation, data, web_request, **kwargs):
-        validate_schema = self.config.schema.get(
-            operation, {"type": "object", "properties": {}})
+        validate_schema = self.config.get_validation_schema(
+            operation)
         processed_data = self.validate(validate_schema, data)
         return getattr(self, operation)(processed_data, web_request, **kwargs)
 
@@ -408,12 +428,16 @@ class SchemaSugarBase(object):
 
     def out_filter(self, result, operation):
         """
-        :type result:
-        :type operation:
-        :return:
+        :type result: dict
+        :type operation: str or unicode
+        :return: dict
         """
         out_dict = {}
-        out_fields = set(self.config.get_out_fields(operation))
+        out_fields = self.config.get_out_fields(operation)
+        if out_fields is None:
+            return result
+
+        out_fields = set(out_fields)
         for key, value in result.items():
             if key in out_fields:
                 out_dict[key] = value
