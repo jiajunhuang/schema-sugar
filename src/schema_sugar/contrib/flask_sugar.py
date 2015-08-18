@@ -106,6 +106,7 @@ class FlaskJar(SugarJarBase):
         """
         super(FlaskJar, self).__init__(name)
         self.registry = set()
+        self._registry = set()
         self.app = flask_app
         self.app.add_url_rule("/meta", endpoint="site_map",
                               view_func=self.site_map)
@@ -162,6 +163,9 @@ class FlaskJar(SugarJarBase):
         :type schema_sugar_instance: schema_sugar.contrib.flask_sugar.FlaskSugar
         """
         schema_sugar = schema_sugar_instance
+        if schema_sugar.__class__.__name__ in self._registry:
+            return
+        self._registry.add(schema_sugar.__class__.__name__)
         self.registry.add(schema_sugar)
         schema_sugar.make_cli(self.entry_point)
 
