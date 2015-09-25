@@ -59,7 +59,6 @@ class JsonForm(object):
         Draft4Validator.check_schema(self.schema)
 
         self.data = {}
-        self.data = {}
         if not strict:
             self._filter_data(json_data, self.schema['properties'], self.data)
         else:

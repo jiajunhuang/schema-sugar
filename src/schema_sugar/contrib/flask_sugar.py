@@ -57,7 +57,7 @@ class FlaskSugar(SchemaSugarBase):
                     res_func=make_resource(self.crud_api)
                 )
             )
-            for name, action in self.config.extra_actions:
+            for name, action in self.config.extra_actions.items():
                 rules.append(
                     ResRule(
                         url=self.config.resource_root + "/<id>/" + name,
@@ -189,9 +189,7 @@ class FlaskJar(SugarJarBase):
     def site_map(self):
         links = []
         for rule in self.app.url_map.iter_rules():
-            if "GET" in rule.methods and self.has_no_empty_params(rule):
-                url = url_for(rule.endpoint)
-                links.append((url, rule.methods, rule.endpoint))
+            links.append((rule.rule, rule.methods, rule.endpoint))
         return "All api listed by url and name, " + \
             "view them with postfix `meta/`:<br>" + \
             "<br>".join(str(x) for x in links)
