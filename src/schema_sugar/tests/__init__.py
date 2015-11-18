@@ -177,9 +177,17 @@ class TestJsonForm(unittest.TestCase):
             schema = self.base_schema
         form = MyForm({
             "field1": "hello",
-            "field2": 1,
-        })
-        self.assertEqual(form.data["field2"], "1")
+            "field2": "1",
+        },
+        live_schema={
+            "type": "object",
+            "properties": {
+                "field2": {"type": "number"},
+            },
+            "required": ["field2", ],
+        }
+        )
+        self.assertEqual(form.data["field2"], 1)
 
     def test_strict_mode(self):
         class MyForm(self.JsonForm):
