@@ -92,11 +92,7 @@ class FlaskSugar(SchemaSugarBase):
         return rules
 
     def web_response(self, result, http_code=200):
-        if isinstance(result, (dict, MultiDict)):
             return jsonify(result), http_code
-        else:
-            return result, http_code
-
 
 class FlaskJar(SugarJarBase):
 

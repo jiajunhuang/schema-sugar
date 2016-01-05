@@ -2,12 +2,16 @@
 # Copyright (c) 2013-2015, SMARTX
 # All rights reserved.
 
-from collections import OrderedDict
+from abc import abstractmethod
+import click
+from collections import (
+    OrderedDict,
+    defaultdict,
+)
 import inspect
 import json
-import click
+
 import jsonschema
-from abc import abstractmethod
 from jsonschema import Draft4Validator
 from jsonschema.exceptions import ValidationError
 
@@ -17,7 +21,7 @@ from .constant import (
     HTTP_GET
 )
 
-from .exceptions import ConfigError, MethodNotImplement
+from .exceptions import ConfigError, MethodNotImplement, FormError
 
 __version__ = "0.0.1"
 
@@ -36,10 +40,24 @@ def is_abs_method(method):
 
 
 class JsonForm(object):
-
+    """
+    Form class that use JsonSchema to do wtforms-like validation.
+    Please refer to JsonSchema(in Google) to write the Schema.
+    """
     schema = {}
 
     def __init__(self, json_data, strict=False, live_schema=None):
+        """
+        Got Json data and validate it by given schema.
+
+        :type json_data: dict
+        :param strict: if strict is not True, the data will be handlered
+          by _filter_data function.It will remove unnecessary field(which
+          does not exist in schema) automatically before validation works.
+        :param live_schema: if you haven't inherited JsonForm and overwrite
+          the class property 'schema', you can pass and live_schema here to
+          do the validation.
+        """
         self.live_schema = live_schema
         if not hasattr(json_data, '__getitem__'):
             raise TypeError('json_data must be a dict.')
@@ -65,13 +83,21 @@ class JsonForm(object):
             self.data = json_data
         self.validator = Draft4Validator(self.schema)
         self.errors = None
+        self.error_msg = None
 
     def validate(self):
         try:
             self.validator.validate(self.data, self.schema)
             return True
         except jsonschema.ValidationError as e:
-            self.errors = str(e)
+            self.error_msg = str(e)
+            self.errors = defaultdict(list)
+            for error in self.validator.iter_errors(self.data):
+                self.errors[
+                    ".".join(
+                        str(path_part) for path_part in error.absolute_path
+                    )
+                ].append(error.message)
             return False
 
     def _filter_data(self, data, properties, output):
@@ -424,10 +450,7 @@ class SchemaSugarBase(object):
         if isinstance(result, (dict, OrderedDict)):
             result = self.out_filter(result, operation)
         if web_request is not None:
-            if isinstance(result, (tuple, list)):
-                return self.web_response(*result)
-            else:
-                return self.web_response(result)
+            return self.web_response(result)
         else:
             return self.cli_response(result)
 
@@ -453,7 +476,7 @@ class SchemaSugarBase(object):
         schema = validate_schema
         form = JsonForm(data, live_schema=schema)
         if not form.validate():
-            raise ValueError("%s " % form.errors)
+            raise FormError(form, form.error_msg, form.errors)
         return form.data
 
     def pre_process(self, data, web_request, **kwargs):
