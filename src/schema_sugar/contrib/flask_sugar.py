@@ -28,8 +28,10 @@ class FlaskSugar(SchemaSugarBase):
 
         def make_resource(api_function):
             def resource(**kwargs):
-                if request.method in ("POST", "PUT", "PATCH"):
-                    data = request.get_json(force=True)
+                if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+                    # TODO(winkidney): To improve. User should always
+                    # know if the  data is "request body" or just "query string"
+                    data = request.get_json(force=True, silent=True) or {}
                 else:
                     data = request.args
                 return api_function(
