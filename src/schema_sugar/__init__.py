@@ -191,8 +191,10 @@ class SugarConfig(object):
         if self.config.get("out_fields", None) is None:
             self.config['out_fields'] = {}
         for operation_name in self.schema:
-            if "properties" not in self.schema[operation_name]:
-                self.schema[operation_name]['properties'] = {}
+            # TODO(winkidney): move support_operations to another place
+            if operation_name != "support_operations":
+                if "properties" not in self.schema[operation_name]:
+                    self.schema[operation_name]['properties'] = {}
 
         self._check_config(self.config)
 
@@ -204,8 +206,10 @@ class SugarConfig(object):
 
             # check validation schema
             form_validator = Draft4Validator(cls._form_schema)
-            for method_schema in config_dict['schema'].values():
-                form_validator.validate(method_schema)
+            for key, method_schema in config_dict['schema'].iteritems():
+                # TODO(winkidney): move support_operations to another place
+                if key != "support_operations":
+                    form_validator.validate(method_schema)
 
             out_fields_validator = Draft4Validator(cls._out_fields_schema)
             for out_fields_obj in config_dict['out_fields'].values():
@@ -219,6 +223,7 @@ class SugarConfig(object):
     def is_plural(self):
         if "resources" in self.config:
             return True
+        return False
 
     def add_action(self, action_name, http_method):
         self.extra_actions[action_name] = {
@@ -241,6 +246,23 @@ class SugarConfig(object):
             return "/" + self.config['resources']
         else:
             return "/" + self.config['resource']
+
+    @property
+    def resource_detail(self):
+        """
+        Return resource type(Singular or  plurality)
+        :return: {"is_singular": True, "name": "resource_name"}
+        """
+        if self.is_plural:
+            return {
+                "is_singular": False,
+                "name": self.config['resources']
+            }
+        else:
+            return {
+                "is_singular": True,
+                "name": self.config['resource']
+            }
 
     @property
     def schema(self):

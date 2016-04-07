@@ -3,8 +3,13 @@
 # All rights reserved.
 
 from collections import namedtuple
-from flask import request, jsonify, Blueprint, url_for
-from werkzeug.datastructures import MultiDict
+import flask
+from flask import (
+    request,
+    jsonify,
+    Blueprint,
+)
+
 from schema_sugar import SugarJarBase, SchemaSugarBase, MethodNotImplement
 from schema_sugar.constant import RESOURCES_HTTP2OP_MAP, RESOURCE_HTTP2OP_MAP
 
@@ -106,12 +111,16 @@ class FlaskJar(SugarJarBase):
         self.registry = set()
         self._registry = set()
         self.app = flask_app
-        self.app.add_url_rule("/meta", endpoint="site_map",
-                              view_func=self.site_map)
+        self.app.add_url_rule(
+            "/meta", endpoint="site_map",
+            view_func=self.sitemap_view
+        )
 
         self.app.register_error_handler(
             MethodNotImplement, self.not_support_view
         )
+
+        self._sitemap = {}
 
     @staticmethod
     def not_support_view(exception):
@@ -159,6 +168,7 @@ class FlaskJar(SugarJarBase):
     def _register(self, schema_sugar_instance, blue_print=None, decorators=None):
         """
         :type schema_sugar_instance: schema_sugar.contrib.flask_sugar.FlaskSugar
+        :type blue_print: Blueprint
         """
         schema_sugar = schema_sugar_instance
         if schema_sugar.__class__.__name__ in self._registry:
@@ -168,8 +178,11 @@ class FlaskJar(SugarJarBase):
         schema_sugar.make_cli(self.entry_point)
 
         rules = schema_sugar.make_resources(decorators=decorators)
+
+        url_prefix = "/"
         if blue_print is not None:
             route_proxy = blue_print
+            url_prefix = route_proxy.url_prefix
         else:
             route_proxy = self.app
         for rule in rules:
@@ -177,6 +190,12 @@ class FlaskJar(SugarJarBase):
                 rule.url, endpoint=rule.url + "_endpoint",
                 methods=rule.methods, view_func=rule.res_func
             )
+        self._add2index(
+            url_prefix,
+            schema_sugar.config.resource_detail["name"],
+            schema_sugar.config.dumps()
+        )
+
         return rules
 
     def has_no_empty_params(self, rule):
@@ -184,10 +203,22 @@ class FlaskJar(SugarJarBase):
         arguments = rule.arguments if rule.arguments is not None else ()
         return len(defaults) >= len(arguments)
 
-    def site_map(self):
-        links = []
-        for rule in self.app.url_map.iter_rules():
-            links.append((rule.rule, rule.methods, rule.endpoint))
-        return "All api listed by url and name, " + \
-            "view them with postfix `meta/`:<br>" + \
-            "<br>".join(str(x) for x in links)
+    def _add2index(self, prefix, resource_name, sugar_dump):
+        """
+        Put the rule into the index.
+        """
+        self._sitemap[self._get_key(prefix, resource_name)] = {
+            "instance": sugar_dump,
+            "url_prefix": prefix,
+        }
+
+    @staticmethod
+    def _get_key(prefix, resource_name):
+        """
+        Get index key for given resource
+        :rtype: str
+        """
+        return "%s  %s" % (prefix, resource_name)
+
+    def sitemap_view(self):
+        return jsonify(self._sitemap)
