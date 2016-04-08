@@ -11,7 +11,8 @@ from flask import (
 )
 
 from schema_sugar import SugarJarBase, SchemaSugarBase, MethodNotImplement
-from schema_sugar.constant import RESOURCES_HTTP2OP_MAP, RESOURCE_HTTP2OP_MAP
+from schema_sugar.client.parser import _mk_url
+from schema_sugar.constant import RESOURCES_HTTP2OP_MAP, RESOURCE_HTTP2OP_MAP, OP2HTTP_MAP
 
 __all__ = (
     "FlaskSugar", "FlaskJar"
@@ -176,7 +177,6 @@ class FlaskJar(SugarJarBase):
             return
         self._registry.add(schema_sugar.__class__.__name__)
         self.registry.add(schema_sugar)
-        schema_sugar.make_cli(self.entry_point)
 
         rules = schema_sugar.make_resources(decorators=decorators)
 
@@ -191,10 +191,21 @@ class FlaskJar(SugarJarBase):
                 rule.url, endpoint=rule.url + "_endpoint",
                 methods=rule.methods, view_func=rule.res_func
             )
+        res_name = schema_sugar.config.resource_detail["name"]
+        is_singular = schema_sugar.config.resource_detail["is_singular"]
         self._add2index(
             url_prefix,
-            schema_sugar.config.resource_detail["name"],
-            schema_sugar.config.dumps()
+            res_name,
+            schema_sugar.config.dumps(),
+            dict(
+                (
+                    op,
+                    {
+                        "url": _mk_url(res_name, url_prefix, is_singular, op),
+                        "method": OP2HTTP_MAP[op]
+                    }
+                ) for op in schema_sugar.config.support_operations
+            )
         )
 
         return rules
@@ -204,13 +215,15 @@ class FlaskJar(SugarJarBase):
         arguments = rule.arguments if rule.arguments is not None else ()
         return len(defaults) >= len(arguments)
 
-    def _add2index(self, prefix, resource_name, sugar_dump):
+    def _add2index(self, prefix, resource_name, sugar_dump, rules):
         """
         Put the rule into the index.
         """
         self._sitemap[self._get_key(prefix, resource_name)] = {
+            "name": resource_name,
             "instance": sugar_dump,
             "url_prefix": prefix,
+            "rules": rules
         }
 
     @staticmethod
@@ -219,7 +232,7 @@ class FlaskJar(SugarJarBase):
         Get index key for given resource
         :rtype: str
         """
-        return "%s  %s" % (prefix, resource_name)
+        return "%s %s" % (prefix, resource_name)
 
     def sitemap_view(self):
         return jsonify(self._sitemap)
