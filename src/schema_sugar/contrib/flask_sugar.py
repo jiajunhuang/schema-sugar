@@ -156,11 +156,12 @@ class FlaskJar(SugarJarBase):
             kwargs = kwargs or {}
 
             def wrapper(schema_class):
-                return self._register(
+                self._register(
                     schema_class(*args, **kwargs),
                     blue_print=blue_print,
                     decorators=decorators,
                 )
+                return schema_class
             return wrapper
         else:
             return self._register(schema_sugar_class(), decorators=decorators)
