@@ -39,6 +39,52 @@ def is_abs_method(method):
         return False
 
 
+def _convert_boolean(data):
+    if isinstance(data, basestring):
+        if data.lower() in ("true", "1"):
+            return True
+        if data.lower() in ("false", "0"):
+            return False
+    return data
+
+
+def _convert_int(data):
+    try:
+        return int(data)
+    except (ValueError, TypeError):
+        return data
+
+
+def _convert_number(data):
+    if isinstance(data, (int, float)):
+        return data
+    if isinstance(data, basestring):
+        if data.isdigit():
+            return int(data)
+    try:
+        return float(data)
+    except (ValueError, TypeError):
+        return data
+
+converter_map = {
+    "boolean": _convert_boolean,
+    "integer": _convert_boolean,
+    "number": _convert_number,
+}
+
+
+def convert_type(data, type):
+    """
+    Try converting given data to specified type.
+    :param data: any data
+    :param type: type definition in json-schema
+    """
+    converter = converter_map.get(type)
+    if converter is not None:
+        return converter(data)
+    return data
+
+
 class JsonForm(object):
     """
     Form class that use JsonSchema to do wtforms-like validation.
@@ -57,6 +103,8 @@ class JsonForm(object):
         :param live_schema: if you haven't inherited JsonForm and overwrite
           the class property 'schema', you can pass and live_schema here to
           do the validation.
+        :param try_convert: if True, json-form will try to convert given data to
+          expected type. For example , convert "true" "1" to True, etc.
         """
         self.live_schema = live_schema
         if not hasattr(json_data, '__getitem__'):
@@ -112,14 +160,11 @@ class JsonForm(object):
                         data[key], properties[key]['properties'],
                         output[key]
                     )
-                elif properties[key]['type'].lower() == 'number':
-                    try:
-                        output[key] = int(data[key])
-                    except (ValueError, TypeError):
-                        output[key] = data[key]
                 else:
-                    output[key] = data[key]
-
+                    output[key] = convert_type(
+                        data[key],
+                        properties[key]['type']
+                    )
 
 # more adapter is required for "optional", "default", etc
 
