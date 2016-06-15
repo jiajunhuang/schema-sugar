@@ -8,6 +8,7 @@ from flask import (
     request,
     jsonify,
     Blueprint,
+    Response,
 )
 
 from schema_sugar import SugarJarBase, SchemaSugarBase, MethodNotImplement
@@ -100,7 +101,10 @@ class FlaskSugar(SchemaSugarBase):
         return rules
 
     def web_response(self, result, http_code=200):
-            return jsonify(result), http_code
+        if isinstance(result, Response):
+            return result
+        return jsonify(result), http_code
+
 
 class FlaskJar(SugarJarBase):
 
@@ -167,6 +171,15 @@ class FlaskJar(SugarJarBase):
         else:
             return self._register(schema_sugar_class(), decorators=decorators)
 
+    @staticmethod
+    def _get_end_point(url):
+        """
+        Wach url to flask end_point string.
+        :type url: str
+        :rtype: str
+        """
+        return url.replace(".", "_")
+
     def _register(self, schema_sugar_instance, blue_print=None, decorators=None):
         """
         :type schema_sugar_instance: schema_sugar.contrib.flask_sugar.FlaskSugar
@@ -188,8 +201,10 @@ class FlaskJar(SugarJarBase):
             route_proxy = self.app
         for rule in rules:
             route_proxy.add_url_rule(
-                rule.url, endpoint=rule.url + "_endpoint",
-                methods=rule.methods, view_func=rule.res_func
+                rule.url,
+                endpoint=self._get_end_point(rule.url) + "_endpoint",
+                methods=rule.methods,
+                view_func=rule.res_func,
             )
         res_name = schema_sugar.config.resource_detail["name"]
         is_singular = schema_sugar.config.resource_detail["is_singular"]
