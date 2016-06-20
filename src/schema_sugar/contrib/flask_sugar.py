@@ -186,9 +186,9 @@ class FlaskJar(SugarJarBase):
         :type blue_print: Blueprint
         """
         schema_sugar = schema_sugar_instance
-        if schema_sugar.__class__.__name__ in self._registry:
+        if str(schema_sugar.__class__) in self._registry:
             return
-        self._registry.add(schema_sugar.__class__.__name__)
+        self._registry.add(str(schema_sugar.__class__))
         self.registry.add(schema_sugar)
 
         rules = schema_sugar.make_resources(decorators=decorators)
