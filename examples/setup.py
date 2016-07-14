@@ -9,7 +9,7 @@ setup(name='cmd_app',
       py_modules=['cmd_app'],
       entry_points={
           'console_scripts': [
-              'rest-cmd = cmd_app:cmd',
+              'schema-rest-cmd = cmd:main',
               'rest-server = cmd_app:run_server',
           ],
       },

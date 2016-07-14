@@ -8,10 +8,10 @@ from schema_sugar.contrib import FlaskJar, FlaskSugar
 flask_app = Flask(__name__)
 jar = FlaskJar(__name__, flask_app)
 
-cmd = jar.entry_point
 
 bl = Blueprint("api", __name__, url_prefix="/api")
 bl2 = Blueprint("bl2", "bl2", url_prefix="/api")
+
 
 # registered with blue print
 @jar.register(blue_print=bl)
@@ -48,11 +48,6 @@ class DiskSugar(FlaskSugar):
         "version": 1,
     }
 
-    def cli_response(self, result, **kwargs):
-        # define response to cli
-        print("Api running got: %s" % result)
-        return result
-
     def index(self, data, web_request, **kwargs):
         # if you visit /api/disks?name=value&hello=world
         # this data will be {"name":"value"} because JsonForm will
@@ -73,7 +68,6 @@ class DiskSugar(FlaskSugar):
         return {"result": "create_successfully!"}
 
 
-
 @jar.register(blue_print=bl)
 class EarthSugar(FlaskSugar):
     config_dict = {
@@ -92,10 +86,6 @@ class EarthSugar(FlaskSugar):
         # single resource and resources will be generated automatically
         "version": 1,
     }
-
-    def cli_response(self, result, **kwargs):
-        print("Api running got: %s" % result)
-        return result
 
     def show(self, data, web_request, **kwargs):
         return {
@@ -146,10 +136,11 @@ class SingularSugar(FlaskSugar):
     def delete(self, data, web_request, **kwargs):
         pass
 
+
 def run_server():
     flask_app.register_blueprint(bl)
     flask_app.register_blueprint(bl2)
-    flask_app.run(debug=True, host="0.0.0.0", port=7001)
+    flask_app.run(debug=True, host="0.0.0.0", port=10402)
 
 
 if __name__ == "__main__":
