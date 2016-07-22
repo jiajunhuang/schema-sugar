@@ -150,6 +150,8 @@ class JsonForm(object):
 
     def _filter_data(self, data, properties, output):
         for key in data:
+            if data[key] in ("", None):
+                continue
             if key in properties:
                 if "type" not in properties[key]:
                     output[key] = data[key]

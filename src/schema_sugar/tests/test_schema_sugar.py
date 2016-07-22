@@ -169,6 +169,24 @@ class TestJsonForm(unittest.TestCase):
         })
         self.assertFalse("filed3" in form.data)
 
+    def test_json_form_with_null_string(self):
+        schema = {
+            "type": "object",
+            "properties": {
+                "field1": {
+                    "type": "string",
+                    "migLength": 1,
+                },
+            },
+        }
+        form = JsonForm(
+            {
+                "field1": "",
+            },
+            live_schema=schema
+        )
+        self.assertNotIn("filed1", form.data)
+
     def test_non_strict_mode(self):
         # In non-strict mode, string and int field will be
         # converted automatically if they do not match the
