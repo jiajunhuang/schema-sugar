@@ -388,7 +388,7 @@ class SchemaSugarBase(object):
         if not hasattr(self, "config_dict") and config_dict is not None:
             # TODO(winkidney): config validation
             self.config_dict = config_dict
-        elif hasattr(self, "config_dict"):
+        elif hasattr(self, "config_dict") and getattr(self, "config_dict") != {}:
             pass
         else:
             raise ValueError(
