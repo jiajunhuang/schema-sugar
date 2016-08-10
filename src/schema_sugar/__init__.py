@@ -107,7 +107,7 @@ class JsonForm(object):
           expected type. For example , convert "true" "1" to True, etc.
         """
         self.live_schema = live_schema
-        if not hasattr(json_data, '__getitem__'):
+        if not isinstance(json_data, dict):
             raise TypeError('json_data must be a dict.')
         if (not self.schema) and (live_schema is None):
             raise NotImplementedError('schema not implemented!')
